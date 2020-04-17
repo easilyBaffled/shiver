@@ -24,7 +24,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "test:cy": "npx cypress run",
-    "test:pre-push": "concurrently \"npm test\" \"npm run test:cy\""
+    "test:pre-push": "concurrently \"CI=true react-scripts test\" \"npm run test:cy\""
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -49,7 +49,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "test:pre-push"
+      "pre-push": "npm run test:pre-push"
     }
   }
 }
