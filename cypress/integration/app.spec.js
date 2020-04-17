@@ -39,11 +39,14 @@ describe("app", () => {
       isTeamA(getPlayer());
       cy.contains("Change Player").click();
       isTeamB(getPlayer());
+      cy.eyesCheckWindow("Change Player to Team B");
       cy.contains("Change Player").click();
       isTeamA(getPlayer());
+      cy.eyesCheckWindow("Change Player to Team A");
     });
     it("clicking on space will move the player", () => {
       clickAt(150, 150);
+      cy.eyesCheckWindow("Move Player");
       getPlayer().then(($el) => {
         const { x, y } = $el[0].getBoundingClientRect();
 

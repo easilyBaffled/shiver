@@ -22,7 +22,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test:cy": "npx cypress run",
+    "test:pre-push": "concurrently \"npm test\" \"npm run test:cy\""
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -41,6 +43,13 @@
   },
   "devDependencies": {
     "@applitools/eyes-cypress": "^3.9.21",
-    "cypress": "^4.4.0"
+    "concurrently": "^5.1.0",
+    "cypress": "^4.4.0",
+    "husky": "^4.2.5"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "test:pre-push"
+    }
   }
 }
