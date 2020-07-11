@@ -29,7 +29,8 @@ export const actors = {
     p.wetness = wetnessClamp(p.wetness + FALLING_WET_ACCUMULATOR);
   },
   move: ({ running, path }, dir, player) => {
-    if (isFallen(player)) player.status = playerStates.up;
+    player.status =
+      running && !isFallen(player) ? playerStates.running : playerStates.up;
     player.position = _.last(path) || player.position;
     player.facing = direction[dir];
   },
@@ -45,35 +46,10 @@ export const actors = {
   moveDown: (payload, p) => {
     actors.move(payload, "down", p);
   },
-  // create: ({ tags = [], ...baseData }) =>
-  //     expandTask({
-  //         ...initialState,
-  //         ...baseData,
-  //         tags: tags
-  //             .map((t) => (typeof t === "string" ? createTag(t, true) : t))
-  //             .concat(status.active),
-  //     }),
-  // removeTag: (tagId, draftTask) => {
-  //     draftTask.tags = draftTask.tags.filter((tag) => tag.id !== tagId);
-  // },
-  // setActive: (__, draftTask) => {
-  //     draftTask.tags = draftTask.tags
-  //         .filter((tag) => !(tag.id in status))
-  //         .concat(status.active);
-  // },
-  // setPending: (__, draftTask) => {
-  //     draftTask.tags = draftTask.tags
-  //         .filter((tag) => !(tag.id in status))
-  //         .concat(status.pending);
-  // },
-  // setDone: (__, draftTask) => {
-  //     draftTask.tags = draftTask.tags
-  //         .filter((tag) => !(tag.id in status))
-  //         .concat(status.done);
-  // },
 };
 
 export const actions = createActions(actors);
 
 export default createReducer(actors, initialState);
 export const isFallen = (p) => p.status === playerStates.fallen;
+export const isRunning = (p) => p.status === playerStates.running;

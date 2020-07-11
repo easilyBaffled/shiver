@@ -61,6 +61,7 @@ describe("Player", () => {
         s.world[0][2].depth = -2;
         s.player.position = new Vector2(2, 0);
         s.player.facing = direction.right;
+        s.player.status = playerStates.running;
       });
 
       expect(expected).toEqual(state);
@@ -74,6 +75,7 @@ describe("Player", () => {
         s.world[0][1].depth = -2;
         s.player.position = new Vector2(1, 0);
         s.player.facing = direction.right;
+        s.player.status = playerStates.running;
       });
 
       expect(expected).toEqual(newState);
@@ -431,7 +433,7 @@ describe("bad kids", () => {
           ...playerInitialState,
           position: new Vector2(3, 1),
           meek: false,
-          discomfortRange: 4,
+          discomfortRange: 3,
         },
       ],
     };
@@ -483,14 +485,17 @@ describe("bad kids", () => {
     test("if have a ball and not meek: run to player", () => {
       const state = produce(i, (s) => {
         s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].position = new Vector2(3, 2);
       });
       const actual = app(state, gameActions.tick());
 
       const expected = produce(i, (s) => {
-        s.world[1][1].depth = -2;
-        s.world[1][2].depth = -2;
-        s.badKids[0].position = new Vector2(1, 1);
-        s.badKids[0].facing = direction.left;
+        s.world[1][3].depth = -2;
+        s.world[0][3].depth = -2;
+        s.badKids[0].position = new Vector2(3, 0);
+        s.badKids[0].facing = direction.up;
+        s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].status = playerStates.running;
         s.player.coldness += COLD_ACCUMULATOR;
       });
 
@@ -505,10 +510,12 @@ describe("bad kids", () => {
       const actual = app(state, gameActions.tick());
 
       const expected = produce(i, (s) => {
-        s.world[0][2].depth = -2;
-        s.world[0][3].depth = -2;
-        s.badKids[0].position = new Vector2(3, 0);
-        s.badKids[0].facing = direction.right;
+        s.world[1][1].depth = -2;
+        s.world[2][1].depth = -2;
+        s.badKids[0].position = new Vector2(1, 2);
+        s.badKids[0].facing = direction.down;
+        s.badKids[0].status = playerStates.running;
+        s.player.coldness += COLD_ACCUMULATOR;
       });
 
       expect(actual).toEqual(expected);
@@ -526,6 +533,9 @@ describe("bad kids", () => {
         s.badKids[0].position = new Vector2(3, 0);
         s.world[0][3].depth = -1;
         s.badKids[0].facing = direction.left;
+        s.badKids[0].ball = { quality: 1 };
+        s.player.coldness += COLD_ACCUMULATOR;
+        s.badKids[0].meek = true;
       });
 
       expect(actual).toEqual(expected);
@@ -542,6 +552,9 @@ describe("bad kids", () => {
         s.world[0][3].depth = -2;
         s.world[0][2].depth = -2;
         s.badKids[0].facing = direction.left;
+        s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].status = playerStates.running;
+        s.player.coldness += COLD_ACCUMULATOR;
       });
 
       expect(actual).toEqual(expected);
@@ -550,22 +563,23 @@ describe("bad kids", () => {
   describe("in ball range", function () {
     test("if facing: throw", () => {
       const state = produce(i, (s) => {
-        s.badKids[0].meek = true;
         s.badKids[0].ball = { quality: 1 };
-        s.badKids[0].position = new Vector2(2, 0);
+        s.badKids[0].position = new Vector2(3, 0);
         s.badKids[0].facing = direction.left;
       });
       const actual = app(state, gameActions.tick());
 
-      const expected = produce(i, (s) => {
+      const expected = produce(state, (s) => {
         s.badKids[0].coldness += COLD_ACCUMULATOR;
+        s.player.coldness += COLD_ACCUMULATOR;
+        s.badKids[0].ball = null;
         s.balls = [
           {
             hit: false,
             direction: direction.left,
             position: new Vector2(1, 0),
             quality: 1,
-            distance: 2,
+            distance: 1,
           },
         ];
       });

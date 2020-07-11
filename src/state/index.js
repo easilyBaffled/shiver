@@ -9,7 +9,7 @@ import ballCollection from "./ballCollection";
 import { actors as ballActors } from "./ball";
 import { direction, move } from "#/state/gameUtil";
 import { getKidPath, getTile, isWalkable } from "#/state/world";
-import { coldnessClamp, isFallen } from "#/state/player";
+import { coldnessClamp, isFallen, isRunning } from "#/state/player";
 import { COLD_ACCUMULATOR, RUNNING_COLD_REDUCER } from "#/state/constants";
 import { nextMove } from "#/tests/state/ai";
 
@@ -34,15 +34,12 @@ export const actions = createActions(actors);
 
 const reducers = combineReducers({
   // Existing reducers
-  player,
+  player: (state, action) =>
+    "kidIndex" in action ? state : player(state, action),
   world,
   balls: ballCollection,
   badKids: (kids = [], action) =>
-    action.kidIndex === -1
-      ? kids
-      : produce(kids, (ks) => {
-          ks[action.kidIndex] = player(kids[action.kidIndex], action);
-        }),
+    kids.map((kid, i) => (i === action.kidIndex ? player(kid, action) : kid)),
 });
 
 // const validators = {};
@@ -56,21 +53,21 @@ const reducers = combineReducers({
 //   });
 // };
 
+// move balls
+// resolve ball collisions
+// apply cold to kids
 const directorReducer = (state, action) =>
   produce(state, (s) => {
-    const isRunning = _.isObject(action.payload) && action.payload.running;
+    const kids = [s.player, ...s.badKids];
 
     s.balls.forEach((b, i) => {
       const path = getPath(s.world, b.position, b.direction, b.quality);
 
       let hitKid;
       let hitTile;
-      const playerPosition = s.player.position;
 
       for (let i = 0; i < path.length; i++) {
-        hitKid = playerPosition.equals(path[i])
-          ? s.player
-          : s.badKids.find((k) => k.position.equals(path[i]));
+        hitKid = kids.find((k) => k.position.equals(path[i]));
         if (hitKid) break;
       }
 
@@ -90,54 +87,14 @@ const directorReducer = (state, action) =>
     });
     s.balls = s.balls.filter((v) => v);
 
-    s.player.coldness = coldnessClamp(
-      s.player.coldness +
-        s.player.wetness +
-        (isRunning ? RUNNING_COLD_REDUCER : COLD_ACCUMULATOR)
-    );
-
-    s.badKids.forEach((kid, i) => {
-      const nextAction = nextMove(kid, s);
-
-      nextAction.payload = {
-        [true /*moving*/]: () => {
-          const running = nextAction.payload;
-          const path = getPath(
-            s.world,
-            kid.position,
-            actionToDirection[nextAction.type],
-            running ? 2 : 1
-          );
-          return { running, path };
-        },
-        [nextAction.type === "scoop"]: () => {
-          const tileDepth = getTile(s.world, kid.position).depth;
-          return [1, 2, 3, 4, 5, 6][Math.abs(tileDepth)];
-        },
-        [nextAction.type === "throwBall"]: () => {
-          const { position, facing, ball } = kid;
-          return { position, direction: facing, quality: ball.quality };
-        },
-      }[true]();
-
-      const kidIsRunning =
-        _.isObject(nextAction.payload) && nextAction.payload.running;
-      console.log(nextAction.payload.path);
-      s.badKids[i] = player(kid, nextAction);
-      s.badKids[i].coldness = coldnessClamp(
+    kids.forEach((kid) => {
+      kid.coldness = coldnessClamp(
         kid.coldness +
           kid.wetness +
-          (kidIsRunning ? RUNNING_COLD_REDUCER : COLD_ACCUMULATOR)
+          (isRunning(kid) ? RUNNING_COLD_REDUCER : COLD_ACCUMULATOR)
       );
     });
   });
-
-const actionToDirection = {
-  moveLeft: direction.left,
-  moveRight: direction.right,
-  moveUp: direction.up,
-  moveDown: direction.down,
-};
 
 const gatherStateMapper = {
   throwBall: (__, s, kid) => {
@@ -153,21 +110,19 @@ const gatherStateMapper = {
       s.world,
       kid.position,
       direction[dir],
-      running ? 2 : 1
+      {
+        [true]: 1,
+        [isFallen(kid)]: 0,
+        [running]: 2,
+      }[true]
     );
 
     return { running, path };
   },
-  moveLeft: (running, p) => gatherStateMapper.move("left", running, p),
-  moveRight: (running, p) => gatherStateMapper.move("right", running, p),
-  moveUp: (running, p) => gatherStateMapper.move("up", running, p),
-  moveDown: (running, p) => gatherStateMapper.move("down", running, p),
-};
-
-const gatherPayload = (state, { type, payload }) => {
-  return type in gatherStateMapper
-    ? gatherStateMapper[type](payload, state)
-    : payload;
+  moveLeft: (running, p, k) => gatherStateMapper.move("left", running, p, k),
+  moveRight: (running, p, k) => gatherStateMapper.move("right", running, p, k),
+  moveUp: (running, p, k) => gatherStateMapper.move("up", running, p, k),
+  moveDown: (running, p, k) => gatherStateMapper.move("down", running, p, k),
 };
 
 const gatherPayloadWith = (kid, state, { type, payload }) => {
@@ -176,15 +131,6 @@ const gatherPayloadWith = (kid, state, { type, payload }) => {
     : payload;
 };
 
-/*
- * Standard reducers are isolated from one another. They cannot share values.
- * The Director is the only reducer with access to all of state.
- * This way it can validate and update values that have cross state dependencies
- *
- * @param {Object} state
- * @param {{payload: *, type: string}} action
- * @return {Object}
- */
 const app = (state = initialState, action = {}) => {
   // gatherPayload with player
   // run `reducers`
@@ -194,11 +140,22 @@ const app = (state = initialState, action = {}) => {
   // run director
   console.log(JSON.stringify(action, null, 4));
   const newState = [state.player, ...state.badKids].reduce((s, kid, i) => {
-    const actionForKid = {
-      type: action.type,
-      payload: gatherPayloadWith(kid, state, action),
-      kidIndex: i - 1,
-    };
+    let actionForKid;
+    if (i === 0) {
+      actionForKid = {
+        type: action.type,
+        payload: gatherPayloadWith(kid, state, action),
+        kidIndex: -1,
+      };
+    } else {
+      const nextAction = nextMove(kid, s);
+      actionForKid = {
+        type: nextAction.type,
+        payload: gatherPayloadWith(kid, state, nextAction),
+        kidIndex: i - 1,
+      };
+    }
+    console.log(actionForKid);
     return reducers(s, actionForKid);
   }, state);
 

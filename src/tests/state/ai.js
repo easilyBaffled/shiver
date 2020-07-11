@@ -6,10 +6,10 @@ import { getTile, isWalkable } from "#/state/world";
 const distanceToPlayer = (pos, player) => pos.distanceTo(player.position);
 
 const inDiscomfortRange = (kid, player) =>
-  kid.discomfortRange <= distanceToPlayer(kid.position, player);
+  kid.discomfortRange >= distanceToPlayer(kid.position, player);
 
 const inBallRange = (kid, player) =>
-  kid.ball && kid.ball.quality >= distanceToPlayer(kid.position, player);
+  kid.ball && kid.ball.quality * 3 >= distanceToPlayer(kid.position, player);
 
 const isMeek = (kid) => kid.meek;
 const hasBall = (kid) => kid.ball;
@@ -34,6 +34,7 @@ const nexFurthestPos = nextPos((a, b) => b[1] - a[1], -Infinity);
 
 export const nextMove = (kid, { world, player }) => {
   if (isFallen(kid)) return playerActions.moveLeft();
+
   if (inBallRange(kid, player)) {
     return {
       [true]: () => playerActions[`move${nexNearestPos(kid, player, world)}`](),
@@ -44,16 +45,16 @@ export const nextMove = (kid, { world, player }) => {
           quality: kid.ball.quality,
         }),
     }[true]();
-  }
-  if (inDiscomfortRange(kid, player)) {
+  } else if (inDiscomfortRange(kid, player)) {
     return {
       [true]: () =>
         playerActions[`move${nexNearestPos(kid, player, world)}`](true),
       [!hasBall(kid)]: () =>
-        playerActions[`move${nexFurthestPos(kid, player, world)}`](true),
-      [!isMeek(kid)]: () => {
-        playerActions[`move${nexNearestPos(kid, player, world)}`]();
-      },
+        console.tap(
+          playerActions[`move${nexFurthestPos(kid, player, world)}`](true)
+        ),
+      [isMeek(kid)]: () =>
+        playerActions[`move${nexNearestPos(kid, player, world)}`](),
     }[true]();
   }
 

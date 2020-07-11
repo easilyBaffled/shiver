@@ -52,6 +52,8 @@ export const getPath = (world, start, direction, travelDistance) => {
 
 export const getKidPath = (world, start, direction, travelDistance) => {
   const path = getPath(world, start, direction, travelDistance);
+  if (_.isEmpty(path)) return path;
+
   const lastTile = getTile(world, _.last(path));
   if (!isWalkable(lastTile)) {
     path.pop();

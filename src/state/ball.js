@@ -26,7 +26,7 @@ export const actors = {
     position: position.add(direction),
     direction,
     quality,
-    distance: [1, 3, 4, 6, 8, 10, 12][quality],
+    distance: [1, 2, 4, 6, 8, 10, 12][quality],
   }),
 };
 
