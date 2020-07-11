@@ -1,5 +1,5 @@
 import _ from "lodash";
-import produce, { original } from "immer";
+import produce from "immer";
 import { combineReducers } from "redux";
 import { createActions } from "./util";
 
@@ -7,22 +7,80 @@ import player, { initialState as playerInitialState } from "./player";
 import world, { getPath } from "./world";
 import ballCollection from "./ballCollection";
 import { actors as ballActors } from "./ball";
-import { direction, move } from "#/state/gameUtil";
-import { getKidPath, getTile, isWalkable } from "#/state/world";
-import { coldnessClamp, isFallen, isRunning } from "#/state/player";
-import { COLD_ACCUMULATOR, RUNNING_COLD_REDUCER } from "#/state/constants";
-import { nextMove } from "#/tests/state/ai";
+import { direction } from "./gameUtil";
+import { getKidPath, getTile, isWalkable } from "./world";
+import { coldnessClamp, isFallen, isRunning } from "./player";
+import { COLD_ACCUMULATOR, RUNNING_COLD_REDUCER } from "./constants";
+import { nextMove } from "./ai";
+import { Vector2 } from "./lib/Vector2";
+import { tileType } from "./gameUtil";
 
-console.tap = (v, ...args) => {
-  console.log(v, ...args);
-  return v;
-};
+function rand(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive
+}
+
+const largeWorld = Array.from({ length: 20 }, (___, y) =>
+  Array.from({ length: 10 }, (__, x) => ({
+    type: rand(0, 10) < 7 ? tileType.snow : tileType.tree,
+    depth: 0,
+    position: new Vector2(x, y),
+  }))
+);
+
+[
+  // badKid starting positions
+  [1, 1],
+  [6, 0],
+  [4, 12],
+  [5, 3],
+  [1, 13],
+].forEach(([x, y]) => {
+  largeWorld[y][x].type = tileType.snow;
+});
 
 export const initialState = {
   player: playerInitialState,
-  world: [],
+  world: largeWorld,
   balls: [],
-  badKids: [],
+  badKids: [
+    {
+      name: 0,
+      ...playerInitialState,
+      position: new Vector2(1, 1),
+      meek: rand(0, 10) < 5,
+      discomfortRange: rand(0, 10),
+    },
+    {
+      name: 2,
+      ...playerInitialState,
+      position: new Vector2(6, 0),
+      meek: rand(0, 10) < 5,
+      discomfortRange: rand(0, 10),
+    },
+    {
+      name: 3,
+      ...playerInitialState,
+      position: new Vector2(4, 12),
+      meek: rand(0, 10) < 5,
+      discomfortRange: rand(0, 10),
+    },
+    {
+      name: 4,
+      ...playerInitialState,
+      position: new Vector2(5, 3),
+      meek: rand(0, 10) < 5,
+      discomfortRange: rand(0, 10),
+    },
+    {
+      name: 5,
+      ...playerInitialState,
+      position: new Vector2(1, 13),
+      meek: rand(0, 10) < 5,
+      discomfortRange: rand(0, 10),
+    },
+  ],
 };
 
 const actors = {
@@ -71,7 +129,7 @@ const directorReducer = (state, action) =>
         if (hitKid) break;
       }
 
-      if (!hitKid) {
+      if (!hitKid && path.length) {
         const ballTile = getTile(s.world, _.last(path));
         hitTile = ballTile && !isWalkable(ballTile) ? ballTile : null;
       }
@@ -115,7 +173,7 @@ const gatherStateMapper = {
         [isFallen(kid)]: 0,
         [running]: 2,
       }[true]
-    );
+    ).map((v) => v.clampScalar(0, 19));
 
     return { running, path };
   },
@@ -126,9 +184,14 @@ const gatherStateMapper = {
 };
 
 const gatherPayloadWith = (kid, state, { type, payload }) => {
-  return type in gatherStateMapper
-    ? gatherStateMapper[type](payload, state, kid)
-    : payload;
+  try {
+    return type in gatherStateMapper
+      ? gatherStateMapper[type](payload, state, kid)
+      : payload;
+  } catch (e) {
+    console.error(kid, { type, payload }, state);
+    throw e;
+  }
 };
 
 const app = (state = initialState, action = {}) => {
@@ -145,7 +208,6 @@ const app = (state = initialState, action = {}) => {
       actionForKid = {
         type: action.type,
         payload: gatherPayloadWith(kid, state, action),
-        kidIndex: -1,
       };
     } else {
       const nextAction = nextMove(kid, s);

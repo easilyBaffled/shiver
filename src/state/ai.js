@@ -1,7 +1,7 @@
 import _ from "lodash";
-import { isFallen, actions as playerActions } from "#/state/player";
-import { direction } from "#/state/gameUtil";
-import { getTile, isWalkable } from "#/state/world";
+import { isFallen, actions as playerActions } from "./player";
+import { direction } from "./gameUtil";
+import { getTile, isWalkable } from "./world";
 
 const distanceToPlayer = (pos, player) => pos.distanceTo(player.position);
 

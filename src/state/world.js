@@ -1,9 +1,7 @@
 import _ from "lodash";
 import { createActions, createReducer } from "./util";
 import { Vector2 } from "./lib/Vector2";
-import { clamp, move, tileType } from "#/state/gameUtil";
-import { isFallen } from "#/state/player";
-import { original } from "immer";
+import { clamp, tileType } from "./gameUtil";
 
 const depthClamp = (v) => clamp(-5, 2, v);
 

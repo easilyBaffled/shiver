@@ -6,10 +6,10 @@ import App from "./App";
 import { devToolsEnhancer } from "redux-devtools-extension";
 import { createStore } from "redux";
 import { Provider } from "react-redux";
-import directorReducer from "./state/director";
+import reducer from "./state";
 import * as serviceWorker from "./serviceWorker";
 
-const store = createStore(directorReducer, devToolsEnhancer());
+const store = createStore(reducer, devToolsEnhancer());
 
 ReactDOM.render(
   <React.StrictMode>

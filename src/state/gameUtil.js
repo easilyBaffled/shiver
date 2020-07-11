@@ -1,28 +1,6 @@
-import { immerable } from "immer";
-
 import { Vector2 } from "./lib/Vector2";
 
 export const pos = (x, y) => ({ x, y });
-export class BoundNumber {
-  min = 0;
-  max = 0;
-  _val = 0;
-  get val() {
-    return this._val;
-  }
-  set val(value) {
-    this._val = value < this.min ? value : this.max < value ? this.max : value;
-  }
-  [immerable] = true;
-  constructor(min, max, val) {
-    this.min = min;
-    this.max = max;
-    this._val = val ?? min;
-  }
-  clone() {
-    return new BoundNumber(this.min, this.max, this._val);
-  }
-}
 
 export const clamp = (minVal, maxVal, val) =>
   Math.max(minVal, Math.min(maxVal, val));
@@ -51,5 +29,3 @@ export const tileType = {
   tree: "tree",
   snow: "snow",
 };
-
-export const cappedSnow = new BoundNumber(-5, 0, 0);

@@ -1,4 +1,4 @@
-import ballReducer, { actions, actors as ballActors } from "#/state/ball";
+import { actors as ballActors } from "./ball";
 
 export default (state = [], { type, payload } = {}) => {
   let newState = state.filter((b) => b && !b.hit);

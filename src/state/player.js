@@ -2,7 +2,8 @@ import _ from "lodash";
 import { createActions, createReducer } from "./util";
 import { playerStates, direction, clamp } from "./gameUtil";
 import { Vector2 } from "./lib/Vector2";
-import { FALLING_WET_ACCUMULATOR } from "#/state/constants";
+import { FALLING_WET_ACCUMULATOR } from "./constants";
+import { original } from "immer";
 
 export const wetnessClamp = (v) => clamp(0, 10, v);
 export const coldnessClamp = (v) => clamp(0, 10, v);
@@ -20,6 +21,7 @@ export const actors = {
   // ( payload, immerState )
   throwBall: (__, p) => {
     p.ball = null;
+    console.log("throw ball", original(p));
   },
   scoop: (quality, p) => {
     p.ball = { quality };
@@ -31,7 +33,7 @@ export const actors = {
   move: ({ running, path }, dir, player) => {
     player.status =
       running && !isFallen(player) ? playerStates.running : playerStates.up;
-    player.position = _.last(path) || player.position;
+    player.position = (_.last(path) || player.position).clampScalar(0, 19);
     player.facing = direction[dir];
   },
   moveLeft: (payload, p) => {
