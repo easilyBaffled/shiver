@@ -1,16 +1,15 @@
-import { createActions, createReducer, match } from "./util";
+import { createActions, createReducer, isPrimitive, match } from "./util";
 const initialState = {};
 
 export const actors = {
-  add: ({ id, payload }, collection) => ({
-    ...collection,
-    [id]: payload,
-  }),
-  remove: ({ id }, collection) =>
-    Object.fromEntries(
-      Object.entries(collection).filter(([entryId]) => entryId !== id)
-    ),
+    add: ({ id, payload }, collection) => collection.concat({ ...payload, id }),
+    remove: (id, collection) => collection.filter((entry) => entry.id !== id),
 };
+
+const getById = (collection, id) =>
+    Array.isArray(collection)
+        ? collection.find((entry) => entry.id === id)
+        : collection[id];
 
 /**
  * Create a reducer that will serve for a collection of a certain type.
@@ -22,22 +21,51 @@ export const actors = {
  * @return {function(Object.<string, T>, {type: *, id?: *, payload: ...[*]=}): Object.<string, T>}
  */
 export const collectionOf = (entryReducer, entryActors, initialState = {}) => {
-  let debugId = 0;
-  const collectionLevelReducer = createReducer(actors, initialState);
-  return (collection = initialState, { type, id = debugId++, payload }) => {
-    const collectionLevelAction = type in actors && id in collection;
-    const entryLevelAction = type in entryActors && id in collection;
+    let debugId = 0;
+    const collectionLevelReducer = createReducer(actors, initialState);
+    return (collection = initialState, { type, payload, ...metaData }) => {
+        const id = match({
+            true: () => debugId++,
+            [!!metaData.id]: () => metaData.id,
+            [!!payload]: () => payload.id,
+            [!!payload && isPrimitive(payload)]: () => payload,
+        });
 
-    return match({
-      true: () => collection,
-      [collectionLevelAction]: () =>
-        collectionLevelReducer(collection, { type, id, payload }),
-      [entryLevelAction]: () => ({
-        ...collection,
-        [id]: entryReducer(collection[id], { type, id, payload }),
-      }),
-    });
-  };
+        const hasEntry = !!getById(collection, id);
+        const collectionLevelAction = type in actors && hasEntry;
+        const entryLevelAction = type in entryActors; // && !!collection.find((entry) => entry.id === id);
+
+        return match({
+            true: () => collection,
+            [collectionLevelAction]: () =>
+                collectionLevelReducer(collection, { type, id, payload }),
+            [entryLevelAction]: () => {
+                if (!hasEntry) {
+                    return collection.concat(
+                        entryReducer(
+                            {},
+                            {
+                                type,
+                                id,
+                                payload,
+                                ...metaData,
+                            }
+                        )
+                    );
+                }
+                return collection.map((entry) =>
+                    entry.id === id
+                        ? entryReducer(entry, {
+                            type,
+                            id,
+                            payload,
+                            ...metaData,
+                        })
+                        : entry
+                );
+            },
+        });
+    };
 };
 
 export const actions = createActions(actors);

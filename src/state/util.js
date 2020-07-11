@@ -1,4 +1,5 @@
 import { useDispatch } from "react-redux";
+import produce from "immer";
 
 /**
  * Flatten deep and complex if/ternary operations
@@ -43,7 +44,9 @@ export const createReducer = (actors, initialState) => (
   { type, payload } = {}
 ) => {
   try {
-    return type in actors ? actors[type](payload, state) : state;
+    return type in actors
+      ? produce(state, (draftState) => actors[type](payload, draftState))
+      : state;
   } catch (e) {
     const data = {
       type,
@@ -63,3 +66,8 @@ export const useEntityDispatch = (entityId) => {
     dispatch({ id: entityId, ...action });
   };
 };
+
+export function isPrimitive(arg) {
+  const type = typeof arg;
+  return type !== "object" && type !== "function";
+}
