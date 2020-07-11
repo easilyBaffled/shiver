@@ -4,12 +4,13 @@ import {
 } from "#state/player";
 // import { actions as tileActions } from "#state/tile";
 // import { actions as worldAction } from "#state/world";
-import app, { initialState } from "#state";
+import app, { initialState, actions as gameActions } from "#state";
 import { pos, num, playerStates, tileType, cappedSnow } from "#state/gameUtil";
-import produce from "immer";
+import produce, { original } from "immer";
 import { Vector2 } from "#/state/lib/Vector2";
 import { COLD_ACCUMULATOR } from "#/state/constants";
 import { direction } from "#/state/gameUtil";
+import { initialState as playerInitialState } from "#/state/player";
 
 console.tap = (v, ...args) => (console.log(v, ...args), v);
 console.tap.label = (l, ...args) => (v) => (console.log(l, v, ...args), v);
@@ -19,12 +20,31 @@ console.tap.apply = (func, ...args) => (v) => (
 
 const flatWorld = [
   [
-    { type: tileType.snow, depth: 0 },
-    { type: tileType.snow, depth: 0 },
-    { type: tileType.snow, depth: 0 },
-    { type: tileType.snow, depth: 0 },
-    { type: tileType.tree, depth: 0 },
+    ...Array.from({ length: 4 }, (__, i) => ({
+      type: tileType.snow,
+      depth: 0,
+      position: new Vector2(i, 0),
+    })),
+    { type: tileType.tree, depth: 0, position: new Vector2(4, 0) },
   ],
+];
+
+const largeWorld = [
+  Array.from({ length: 4 }, (__, i) => ({
+    type: tileType.snow,
+    depth: 0,
+    position: new Vector2(i, 0),
+  })),
+  Array.from({ length: 4 }, (__, i) => ({
+    type: tileType.snow,
+    depth: 0,
+    position: new Vector2(i, 1),
+  })),
+  Array.from({ length: 4 }, (__, i) => ({
+    type: tileType.snow,
+    depth: 0,
+    position: new Vector2(i, 2),
+  })),
 ];
 
 describe("Player", () => {
@@ -40,6 +60,7 @@ describe("Player", () => {
         s.world[0][1].depth = -2;
         s.world[0][2].depth = -2;
         s.player.position = new Vector2(2, 0);
+        s.player.facing = direction.right;
       });
 
       expect(expected).toEqual(state);
@@ -52,6 +73,7 @@ describe("Player", () => {
       const newState = produce(state, (s) => {
         s.world[0][1].depth = -2;
         s.player.position = new Vector2(1, 0);
+        s.player.facing = direction.right;
       });
 
       expect(expected).toEqual(newState);
@@ -68,6 +90,7 @@ describe("Player", () => {
         s.world[0][1].depth = -1;
         s.player.position = new Vector2(1, 0);
         s.player.coldness += COLD_ACCUMULATOR;
+        s.player.facing = direction.right;
       });
 
       expect(expected).toEqual(state);
@@ -81,6 +104,7 @@ describe("Player", () => {
       const expected = produce(state, (s) => {
         s.player.position = new Vector2(0, 0);
         s.player.coldness += COLD_ACCUMULATOR;
+        s.player.facing = direction.right;
       });
 
       expect(actual).toEqual(expected);
@@ -88,11 +112,7 @@ describe("Player", () => {
     test("down", () => {
       const state = produce(i, (s) => {
         s.world.push([
-          { type: tileType.snow, depth: 0 },
-          { type: tileType.snow, depth: 0 },
-          { type: tileType.snow, depth: 0 },
-          { type: tileType.snow, depth: 0 },
-          { type: tileType.tree, depth: 0 },
+          { type: tileType.snow, depth: 0, position: new Vector2(0, 1) },
         ]);
       });
 
@@ -102,6 +122,7 @@ describe("Player", () => {
         s.world[1][0].depth = -1;
         s.player.position = new Vector2(0, 1);
         s.player.coldness = COLD_ACCUMULATOR;
+        s.player.facing = direction.down;
       });
 
       expect(actual).toEqual(expected);
@@ -130,6 +151,7 @@ describe("Player", () => {
 
       const expected = produce(state, (s) => {
         s.player.status = playerStates.up;
+        s.player.facing = direction.right;
         s.player.coldness = 1;
       });
 
@@ -145,6 +167,7 @@ describe("Player", () => {
 
       const expected = produce(state, (s) => {
         s.player.status = playerStates.up;
+        s.player.facing = direction.right;
         s.player.coldness = 3;
       });
 
@@ -257,10 +280,11 @@ describe("Snowball", () => {
         s.player.ball = null;
         s.balls = [
           {
+            hit: false,
             direction: direction.right,
-            position: new Vector2(1, 0),
+            position: new Vector2(2, 0),
             quality: 1,
-            distance: 3,
+            distance: 2,
           },
         ];
       });
@@ -271,6 +295,7 @@ describe("Snowball", () => {
       const state = produce(i, (s) => {
         s.balls = [
           {
+            hit: false,
             direction: direction.right,
             position: new Vector2(1, 0),
             quality: 1,
@@ -284,6 +309,7 @@ describe("Snowball", () => {
         s.player.coldness += COLD_ACCUMULATOR;
         s.balls = [
           {
+            hit: false,
             direction: direction.right,
             position: new Vector2(2, 0),
             quality: 1,
@@ -298,6 +324,7 @@ describe("Snowball", () => {
       const state = produce(i, (s) => {
         s.balls = [
           {
+            hit: false,
             direction: direction.right,
             position: new Vector2(1, 0),
             quality: 1,
@@ -320,6 +347,7 @@ describe("Snowball", () => {
       const state = produce(i, (s) => {
         s.balls = [
           {
+            hit: false,
             direction: direction.right,
             position: new Vector2(3, 0),
             quality: 2,
@@ -332,10 +360,218 @@ describe("Snowball", () => {
         s.player.facing = direction.down;
         s.player.coldness += COLD_ACCUMULATOR;
         s.world[0][4].wetness = 2;
+        s.balls = [
+          {
+            hit: true,
+            direction: direction.right,
+            position: new Vector2(4, 0),
+            quality: 2,
+            distance: 1,
+          },
+        ];
+      });
+
+      expect(actual).toEqual(expected);
+    });
+    test("collided ball wil be removed", () => {
+      const state = produce(i, (s) => {
+        s.balls = [
+          {
+            hit: true,
+            direction: direction.right,
+            position: new Vector2(3, 0),
+            quality: 2,
+            distance: 2,
+          },
+        ];
+      });
+      const actual = app(state, playerActions.moveDown());
+      const expected = produce(state, (s) => {
+        s.player.facing = direction.down;
+        s.player.coldness += COLD_ACCUMULATOR;
         s.balls = [];
       });
 
       expect(actual).toEqual(expected);
     });
+    test("ball will collide with the player", () => {
+      const state = produce(i, (s) => {
+        s.balls = [
+          {
+            direction: direction.left,
+            position: new Vector2(2, 0),
+            quality: 2,
+            distance: 2,
+          },
+        ];
+      });
+      const actual = app(state, playerActions.moveDown());
+      const expected = produce(state, (s) => {
+        s.player.facing = direction.down;
+        s.player.coldness = 3;
+        s.player.wetness = 2;
+        s.balls[0].position = new Vector2(0, 0);
+        s.balls[0].hit = true;
+        s.balls[0].distance = 1;
+      });
+
+      expect(actual).toEqual(expected);
+    });
   });
+});
+
+describe("bad kids", () => {
+  let i;
+  beforeEach(() => {
+    i = {
+      ...initialState,
+      world: largeWorld,
+      badKids: [
+        {
+          ...playerInitialState,
+          position: new Vector2(3, 1),
+          meek: false,
+          discomfortRange: 4,
+        },
+      ],
+    };
+  });
+  test("if down: get up", () => {
+    const state = produce(i, (s) => {
+      s.badKids[0].status = playerStates.fallen;
+    });
+    const actual = app(state, gameActions.tick());
+
+    const expected = produce(i, (s) => {
+      s.badKids[0].status = playerStates.up;
+      s.badKids[0].facing = direction.left;
+      s.badKids[0].coldness += COLD_ACCUMULATOR;
+      s.player.coldness += COLD_ACCUMULATOR;
+    });
+
+    expect(actual).toEqual(expected);
+  });
+  describe("out of discomfortRange", () => {
+    test("if doesnt have a ball: scoop ball", () => {
+      const actual = app(i, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.badKids[0].coldness += COLD_ACCUMULATOR;
+        s.badKids[0].ball = { quality: 1 };
+        s.player.coldness += COLD_ACCUMULATOR;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+    test("if have a ball and meek: walk to player", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].meek = true;
+        s.badKids[0].ball = { quality: 1 };
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(state, (s) => {
+        s.world[0][3].depth = -1;
+        s.badKids[0].position = new Vector2(3, 0);
+        s.badKids[0].facing = direction.up;
+        s.badKids[0].coldness += COLD_ACCUMULATOR;
+        s.player.coldness += COLD_ACCUMULATOR;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+    test("if have a ball and not meek: run to player", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].ball = { quality: 1 };
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.world[1][1].depth = -2;
+        s.world[1][2].depth = -2;
+        s.badKids[0].position = new Vector2(1, 1);
+        s.badKids[0].facing = direction.left;
+        s.player.coldness += COLD_ACCUMULATOR;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+  });
+  describe("in discomfortRange and out of ball range", () => {
+    test("if doesnt have a ball: run away", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].position = new Vector2(1, 0);
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.world[0][2].depth = -2;
+        s.world[0][3].depth = -2;
+        s.badKids[0].position = new Vector2(3, 0);
+        s.badKids[0].facing = direction.right;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+    test("if have a ball and meek: walk to player", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].meek = true;
+        s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].position = new Vector2(4, 0);
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.badKids[0].coldness += COLD_ACCUMULATOR;
+        s.badKids[0].position = new Vector2(3, 0);
+        s.world[0][3].depth = -1;
+        s.badKids[0].facing = direction.left;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+    test("if have a ball and not meek: run to player", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].position = new Vector2(4, 0);
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.badKids[0].position = new Vector2(2, 0);
+        s.world[0][3].depth = -2;
+        s.world[0][2].depth = -2;
+        s.badKids[0].facing = direction.left;
+      });
+
+      expect(actual).toEqual(expected);
+    });
+  });
+  describe("in ball range", function () {
+    test("if facing: throw", () => {
+      const state = produce(i, (s) => {
+        s.badKids[0].meek = true;
+        s.badKids[0].ball = { quality: 1 };
+        s.badKids[0].position = new Vector2(2, 0);
+        s.badKids[0].facing = direction.left;
+      });
+      const actual = app(state, gameActions.tick());
+
+      const expected = produce(i, (s) => {
+        s.badKids[0].coldness += COLD_ACCUMULATOR;
+        s.balls = [
+          {
+            hit: false,
+            direction: direction.left,
+            position: new Vector2(1, 0),
+            quality: 1,
+            distance: 2,
+          },
+        ];
+      });
+
+      expect(actual).toEqual(expected);
+    });
+  });
+  test("else: walk to player", () => {});
 });

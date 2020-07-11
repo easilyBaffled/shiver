@@ -30,7 +30,7 @@ export const clamp = (minVal, maxVal, val) =>
 export const direction = {
   up: new Vector2(0, -1),
   down: new Vector2(0, 1),
-  left: new Vector2(-1, 1),
+  left: new Vector2(-1, 0),
   right: new Vector2(1, 0),
 };
 

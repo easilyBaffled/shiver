@@ -1,10 +1,9 @@
 import { createActions, createReducer } from "./util";
 import { Vector2 } from "./lib/Vector2";
-import { clamp, direction, tileType } from "#/state/gameUtil";
-
-const depthClamp = (v) => clamp(-5, 2, v);
+import { direction, tileType } from "#/state/gameUtil";
 
 const initialState = {
+  hit: false,
   direction: direction.right,
   position: new Vector2(0, 0),
   quality: 1,
@@ -14,11 +13,16 @@ const initialState = {
 export const actors = {
   move: (__, b) => {
     if (!b.distance) return null;
-    b.position = b.position.add(b.direction);
+    b.position = b.position.clone().add(b.direction);
     b.distance -= 1;
   },
-
+  hit: (position, b) => {
+    b.position = position;
+    b.distance -= 1;
+    b.hit = true;
+  },
   throwBall: ({ position, direction, quality }) => ({
+    hit: false,
     position: position.add(direction),
     direction,
     quality,
