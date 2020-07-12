@@ -9,7 +9,7 @@ import { Provider } from "react-redux";
 import reducer from "./state";
 import * as serviceWorker from "./serviceWorker";
 
-const store = createStore(reducer, devToolsEnhancer());
+const store = createStore(reducer, devToolsEnhancer({ trace: true }));
 
 ReactDOM.render(
   <React.StrictMode>

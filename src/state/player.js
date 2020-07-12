@@ -5,8 +5,8 @@ import { Vector2 } from "./lib/Vector2";
 import { FALLING_WET_ACCUMULATOR } from "./constants";
 import { original } from "immer";
 
-export const wetnessClamp = (v) => clamp(0, 10, v);
-export const coldnessClamp = (v) => clamp(0, 10, v);
+export const wetnessClamp = (v) => clamp(0, 30, v);
+export const coldnessClamp = (v) => clamp(0, 30, v);
 
 export const initialState = {
   status: playerStates.up,
@@ -30,9 +30,14 @@ export const actors = {
     p.status = playerStates.fallen;
     p.wetness = wetnessClamp(p.wetness + FALLING_WET_ACCUMULATOR);
   },
-  move: ({ running, path }, dir, player) => {
-    player.status =
-      running && !isFallen(player) ? playerStates.running : playerStates.up;
+  move: ({ running, path, didFall }, dir, player) => {
+    player.status = {
+      [true]: playerStates.up,
+      [running && !isFallen(player)]: playerStates.running,
+      [didFall]: playerStates.fallen,
+    }[true];
+    if (didFall)
+      player.wetness = wetnessClamp(player.wetness + FALLING_WET_ACCUMULATOR);
     player.position = (_.last(path) || player.position).clampScalar(0, 19);
     player.facing = direction[dir];
   },

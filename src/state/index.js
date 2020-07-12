@@ -23,7 +23,7 @@ function rand(min, max) {
 
 const largeWorld = Array.from({ length: 20 }, (___, y) =>
   Array.from({ length: 10 }, (__, x) => ({
-    type: rand(0, 10) < 7 ? tileType.snow : tileType.tree,
+    type: rand(0, 10) < 10 ? tileType.snow : tileType.tree,
     depth: 0,
     position: new Vector2(x, y),
   }))
@@ -154,6 +154,20 @@ const directorReducer = (state, action) =>
     });
   });
 
+const setFall = (path, world, isRunning) => {
+  let fallChance = isRunning ? 10 : 0;
+  let didFall = false;
+  const fallPath = path
+    .map((vec) => {
+      if (didFall) return null;
+
+      didFall = rand(0, 100) <= fallChance + getTile(world, vec).depth * -10;
+      return vec;
+    })
+    .filter((v) => v);
+  return { fallPath, didFall };
+};
+
 const gatherStateMapper = {
   throwBall: (__, s, kid) => {
     const { position, facing, ball } = kid;
@@ -174,8 +188,8 @@ const gatherStateMapper = {
         [running]: 2,
       }[true]
     ).map((v) => v.clampScalar(0, 19));
-
-    return { running, path };
+    const { fallPath, didFall } = setFall(path, s.world);
+    return { running, didFall, path: fallPath };
   },
   moveLeft: (running, p, k) => gatherStateMapper.move("left", running, p, k),
   moveRight: (running, p, k) => gatherStateMapper.move("right", running, p, k),
@@ -205,6 +219,10 @@ const app = (state = initialState, action = {}) => {
   const newState = [state.player, ...state.badKids].reduce((s, kid, i) => {
     let actionForKid;
     if (i === 0) {
+      console.log(action.type === "scoop", state.player.ball);
+      if (action.type === "scoop" && state.player.ball) {
+        action.type = "throwBall";
+      }
       actionForKid = {
         type: action.type,
         payload: gatherPayloadWith(kid, state, action),
@@ -217,7 +235,7 @@ const app = (state = initialState, action = {}) => {
         kidIndex: i - 1,
       };
     }
-    console.log(actionForKid);
+    // console.log(actionForKid);
     return reducers(s, actionForKid);
   }, state);
 
