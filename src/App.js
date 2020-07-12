@@ -36,22 +36,19 @@ const Tile = ({ children, className, position, depth = 0, ...props }) => (
     {/*  width={tileSize}*/}
     {/*  className={`tile ${className} depth-${Math.abs(depth)}`}*/}
     {/*/>*/}
-    <foreignObject
-      x={position.x * tileSize}
-      y={position.y * tileSize}
-      height={tileSize}
-      width={tileSize}
+
+    <div
+      style={{
+        height: tileSize,
+        width: tileSize,
+      }}
+      data-x={position.x}
+      data-y={position.y}
+      className={`tile-text depth-${Math.abs(depth)} ${className}`}
     >
-      <div
-        style={{
-          height: tileSize,
-          width: tileSize,
-        }}
-        className={`tile-text depth-${Math.abs(depth)}`}
-      >
-        {children}
-      </div>
-    </foreignObject>
+      {children}
+    </div>
+
     {/*<text*/}
     {/*  className="tile-text"*/}
     {/*  x={position.x * tileSize}*/}
@@ -66,11 +63,7 @@ const Tree = (tileProps) => (
     🌲️
   </Tile>
 );
-const Snow = (tileProps) => (
-  <Tile {...tileProps} className={`snow `}>
-    ❄️
-  </Tile>
-);
+const Snow = (tileProps) => <Tile {...tileProps} className={`snow `}></Tile>;
 const BadKid = ({ ball, facing, ...tileProps }) => (
   <Tile {...tileProps} className="tile badKid">
     😈{ball ? "b" : ""}, {dirFromVector(facing).split("")[0]}
@@ -82,7 +75,7 @@ const SnowBall = ({ quality, ...tileProps }) => (
   </Tile>
 );
 const Player = ({ status, ...tileProps }) => (
-  <Tile {...tileProps} className={`player ${status}`}>
+  <Tile {...tileProps} className={`player ${status} animated bounce`}>
     🙃
   </Tile>
 );
@@ -92,26 +85,39 @@ function App() {
   const s = useSelector((s) => s);
 
   const map = s.world.map((row) =>
-    row.map(
-      (tile) =>
+    row
+      // .filter((tile) => tile.position.distanceTo(s.player.position) < 9)
+      .map((tile) =>
         ({
-          [tile.type === tileType.snow]: <Snow {...tile} />,
-          [tile.type === tileType.tree]: <Tree {...tile} />,
-          [!!isOneOfAtTile(s.badKids, tile)]: (
+          [tile.type === tileType.snow]: () => (
+            <Snow {...tile} key={`${tile.position.x},${tile.position.y}`} />
+          ),
+          [tile.type === tileType.tree]: () => (
+            <Tree {...tile} key={`${tile.position.x},${tile.position.y}`} />
+          ),
+          [!!isOneOfAtTile(s.badKids, tile)]: () => (
             <BadKid
               {...tile}
               {...s.badKids.find((entry) => isEntryAtTile(entry, tile))}
+              key={`${tile.position.x},${tile.position.y}`}
             />
           ),
-          [!!isOneOfAtTile(s.balls, tile)]: (
+          [!!isOneOfAtTile(s.balls, tile)]: () => (
             <SnowBall
               {...tile}
               {...s.balls.find((entry) => isEntryAtTile(entry, tile))}
+              key={`${tile.position.x},${tile.position.y}`}
             />
           ),
-          [isEntryAtTile(s.player, tile)]: <Player {...tile} {...s.player} />,
-        }[true])
-    )
+          [isEntryAtTile(s.player, tile)]: () => (
+            <Player
+              {...tile}
+              {...s.player}
+              key={`${tile.position.x},${tile.position.y}`}
+            />
+          ),
+        }[true]())
+      )
   );
 
   const { x, y } = s.player.position;
@@ -149,7 +155,11 @@ function App() {
         <code>{s.player.wetness}</code>
       </pre>
       <img id="snowGif" src={snow} alt="loading..." />
-      <svg viewBox={Object.values(viewBox).join(" ")}>{map}</svg>
+      <svg viewBox={Object.values(viewBox).join(" ")}>
+        <foreignObject x={0} y={0} height={1000} width={1000}>
+          <main>{map}</main>
+        </foreignObject>
+      </svg>
     </div>
   );
 }
