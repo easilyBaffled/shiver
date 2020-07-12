@@ -22,8 +22,8 @@ function rand(min, max) {
 }
 
 const largeWorld = Array.from({ length: 20 }, (___, y) =>
-  Array.from({ length: 10 }, (__, x) => ({
-    type: rand(0, 10) < 10 ? tileType.snow : tileType.tree,
+  Array.from({ length: 20 }, (__, x) => ({
+    type: rand(0, 10) < 9 ? tileType.snow : tileType.tree,
     depth: 0,
     position: new Vector2(x, y),
   }))
@@ -52,13 +52,13 @@ export const initialState = {
       meek: rand(0, 10) < 7,
       discomfortRange: rand(3, 7),
     },
-    // {
-    //   name: 2,
-    //   ...playerInitialState,
-    //   position: new Vector2(6, 0),
-    //   meek: rand(0, 10) < 5,
-    //   discomfortRange: rand(0, 5),
-    // },
+    {
+      name: 2,
+      ...playerInitialState,
+      position: new Vector2(6, 0),
+      meek: false,
+      discomfortRange: 6,
+    },
     // {
     //   name: 3,
     //   ...playerInitialState,
@@ -106,7 +106,10 @@ const reducers = combineReducers({
 const directorReducer = (state, action) =>
   produce(state, (s) => {
     const kids = [s.player, ...s.badKids];
-
+    s.player.hit = false;
+    s.badKids.forEach((k, i) => {
+      s.badKids[i].hit = false;
+    });
     s.balls.forEach((b, i) => {
       if (b.isNew) {
         s.balls[i].isNew = false;
@@ -127,6 +130,7 @@ const directorReducer = (state, action) =>
         }
 
         if (hitKid || hitTile) {
+          (hitKid || hitTile).hit = true;
           (hitKid || hitTile).wetness =
             ((hitKid || hitTile).wetness || 0) + b.quality;
           ballActors.hit((hitKid || hitTile).position, s.balls[i]);
@@ -138,12 +142,15 @@ const directorReducer = (state, action) =>
     });
     s.balls = s.balls.filter((v) => v);
 
-    kids.forEach((kid) => {
+    kids.forEach((kid, i) => {
       kid.coldness = coldnessClamp(
         kid.coldness +
           kid.wetness +
           (isRunning(kid) ? RUNNING_COLD_REDUCER : COLD_ACCUMULATOR)
       );
+      if (i !== 0 && kid.coldness > 30) {
+        s.badKids.splice(i, 1);
+      }
     });
   });
 

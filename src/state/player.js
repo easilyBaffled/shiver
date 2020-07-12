@@ -37,6 +37,7 @@ export const actors = {
     }[true];
     if (didFall)
       player.wetness = wetnessClamp(player.wetness + FALLING_WET_ACCUMULATOR);
+    player.prevPos = player.position.clone();
     player.position = (_.last(path) || player.position).clampScalar(0, 19);
     player.facing = direction[dir];
   },

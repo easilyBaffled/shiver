@@ -66,12 +66,6 @@ export const nextMove = (kid, { world, player, balls }) => {
           quality: kid.ball.quality,
         }),
       [onAxis(kid, player) && !isFacing(kid, player)]: () => {
-        console.log(
-          kid.position,
-          player.position,
-          getFacingVec(kid, player),
-          dirFromVector(getFacingVec(kid, player))
-        );
         const newFacingVec = dirFromVector(getFacingVec(kid, player));
         const isValidMove = isValidTile(
           kid.position.clone().add(newFacingVec),
