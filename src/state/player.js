@@ -5,8 +5,8 @@ import { Vector2 } from "./lib/Vector2";
 import { FALLING_WET_ACCUMULATOR } from "./constants";
 import { original } from "immer";
 
-export const wetnessClamp = (v) => clamp(0, 30, v);
-export const coldnessClamp = (v) => clamp(0, 30, v);
+export const wetnessClamp = (v) => clamp(0, 10, v);
+export const coldnessClamp = (v) => clamp(0, 60, v);
 
 export const initialState = {
   status: playerStates.up,
@@ -21,7 +21,6 @@ export const actors = {
   // ( payload, immerState )
   throwBall: (__, p) => {
     p.ball = null;
-    console.log("throw ball", original(p));
   },
   scoop: (quality, p) => {
     p.ball = { quality };

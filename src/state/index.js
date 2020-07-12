@@ -32,7 +32,7 @@ const largeWorld = Array.from({ length: 20 }, (___, y) =>
 [
   // badKid starting positions
   [1, 1],
-  [6, 0],
+  [2, 2],
   [4, 12],
   [5, 3],
   [1, 13],
@@ -48,38 +48,38 @@ export const initialState = {
     {
       name: 0,
       ...playerInitialState,
-      position: new Vector2(1, 1),
-      meek: rand(0, 10) < 5,
-      discomfortRange: rand(0, 10),
+      position: new Vector2(2, 2),
+      meek: rand(0, 10) < 7,
+      discomfortRange: rand(3, 7),
     },
-    {
-      name: 2,
-      ...playerInitialState,
-      position: new Vector2(6, 0),
-      meek: rand(0, 10) < 5,
-      discomfortRange: rand(0, 10),
-    },
-    {
-      name: 3,
-      ...playerInitialState,
-      position: new Vector2(4, 12),
-      meek: rand(0, 10) < 5,
-      discomfortRange: rand(0, 10),
-    },
-    {
-      name: 4,
-      ...playerInitialState,
-      position: new Vector2(5, 3),
-      meek: rand(0, 10) < 5,
-      discomfortRange: rand(0, 10),
-    },
-    {
-      name: 5,
-      ...playerInitialState,
-      position: new Vector2(1, 13),
-      meek: rand(0, 10) < 5,
-      discomfortRange: rand(0, 10),
-    },
+    // {
+    //   name: 2,
+    //   ...playerInitialState,
+    //   position: new Vector2(6, 0),
+    //   meek: rand(0, 10) < 5,
+    //   discomfortRange: rand(0, 5),
+    // },
+    // {
+    //   name: 3,
+    //   ...playerInitialState,
+    //   position: new Vector2(4, 12),
+    //   meek: rand(0, 10) < 5,
+    //   discomfortRange: rand(0, 5),
+    // },
+    // {
+    //   name: 4,
+    //   ...playerInitialState,
+    //   position: new Vector2(5, 3),
+    //   meek: rand(0, 10) < 5,
+    //   discomfortRange: rand(0, 10),
+    // },
+    // {
+    //   name: 5,
+    //   ...playerInitialState,
+    //   position: new Vector2(1, 13),
+    //   meek: rand(0, 10) < 5,
+    //   discomfortRange: rand(0, 10),
+    // },
   ],
 };
 
@@ -100,17 +100,6 @@ const reducers = combineReducers({
     kids.map((kid, i) => (i === action.kidIndex ? player(kid, action) : kid)),
 });
 
-// const validators = {};
-//
-// const validationReducer = (state, { type, payload } = {}) => {
-//   const validation =
-//     type in validators ? validators[type](payload, state) : false;
-//   if (!validation) return false;
-//   return produce(state, (draft) => {
-//     draft.errors.push(validation);
-//   });
-// };
-
 // move balls
 // resolve ball collisions
 // apply cold to kids
@@ -119,28 +108,32 @@ const directorReducer = (state, action) =>
     const kids = [s.player, ...s.badKids];
 
     s.balls.forEach((b, i) => {
-      const path = getPath(s.world, b.position, b.direction, b.quality);
-
-      let hitKid;
-      let hitTile;
-
-      for (let i = 0; i < path.length; i++) {
-        hitKid = kids.find((k) => k.position.equals(path[i]));
-        if (hitKid) break;
-      }
-
-      if (!hitKid && path.length) {
-        const ballTile = getTile(s.world, _.last(path));
-        hitTile = ballTile && !isWalkable(ballTile) ? ballTile : null;
-      }
-
-      if (hitKid || hitTile) {
-        (hitKid || hitTile).wetness =
-          ((hitKid || hitTile).wetness || 0) + b.quality;
-        ballActors.hit((hitKid || hitTile).position, s.balls[i]);
+      if (b.isNew) {
+        s.balls[i].isNew = false;
       } else {
-        if (s.balls[i].distance === 0) s.balls[i] = null;
-        else ballActors.move(null, s.balls[i]);
+        const path = getPath(s.world, b.position, b.direction, b.quality);
+
+        let hitKid;
+        let hitTile;
+
+        for (let i = 0; i < path.length; i++) {
+          hitKid = kids.find((k) => k.position.equals(path[i]));
+          if (hitKid) break;
+        }
+
+        if (!hitKid && path.length) {
+          const ballTile = getTile(s.world, _.last(path));
+          hitTile = ballTile && !isWalkable(ballTile) ? ballTile : null;
+        }
+
+        if (hitKid || hitTile) {
+          (hitKid || hitTile).wetness =
+            ((hitKid || hitTile).wetness || 0) + b.quality;
+          ballActors.hit((hitKid || hitTile).position, s.balls[i]);
+        } else {
+          if (s.balls[i].distance === 0) s.balls[i] = null;
+          else ballActors.move(null, s.balls[i]);
+        }
       }
     });
     s.balls = s.balls.filter((v) => v);
@@ -209,17 +202,10 @@ const gatherPayloadWith = (kid, state, { type, payload }) => {
 };
 
 const app = (state = initialState, action = {}) => {
-  // gatherPayload with player
-  // run `reducers`
-  // for kid in badKids
-  //  gatherPayload with kid
-  //  run `reducers`
-  // run director
   console.log(JSON.stringify(action, null, 4));
   const newState = [state.player, ...state.badKids].reduce((s, kid, i) => {
     let actionForKid;
     if (i === 0) {
-      console.log(action.type === "scoop", state.player.ball);
       if (action.type === "scoop" && state.player.ball) {
         action.type = "throwBall";
       }
@@ -238,15 +224,6 @@ const app = (state = initialState, action = {}) => {
     // console.log(actionForKid);
     return reducers(s, actionForKid);
   }, state);
-
-  // console.log(JSON.stringify({ state, action }, null, 4));
-  // action.payload = gatherPayload(state, action);
-  //console.log(action.payload);
-  // const validationRes = validationReducer(state, action);
-  // if (validationRes) {
-  //   // validationRes will be false if there were no errors
-  //   return validationRes;
-  // }
 
   return directorReducer(newState, action);
 };

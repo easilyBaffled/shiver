@@ -29,3 +29,12 @@ export const tileType = {
   tree: "tree",
   snow: "snow",
 };
+
+export const dirFromVector = ({ x, y }) =>
+  ({
+    [true]: "Right",
+    [x === 0 && y === 1]: "Down",
+    [x === 0 && y === -1]: "Up",
+    [x === -1 && y === 0]: "Left",
+    [x === 1 && y === 0]: "Right",
+  }[true]);

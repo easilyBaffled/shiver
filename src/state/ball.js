@@ -1,6 +1,6 @@
 import { createActions, createReducer } from "./util";
 import { Vector2 } from "./lib/Vector2";
-import { direction, tileType } from "./gameUtil";
+import { direction, tileType, clamp } from "./gameUtil";
 
 const initialState = {
   hit: false,
@@ -22,10 +22,11 @@ export const actors = {
     b.hit = true;
   },
   throwBall: ({ position, direction, quality }) => ({
+    isNew: true,
     hit: false,
     position: position.clone().add(direction).clampScalar(0, 19),
     direction,
-    quality,
+    quality: clamp(1, 3, quality),
     distance: [1, 2, 4, 6, 8, 10, 12][quality],
   }),
 };
