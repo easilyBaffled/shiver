@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import wind from "./assets/wind01.mp3";
-import scoop from "./assets/packing-snow-sound-effect-89291382.mp3";
+import wind from "./assets/wind.mp3";
+import scoop from "./assets/scoop.mp3";
 import Animate from "react-smooth";
 import "./App.css";
 import { useDispatch, useSelector } from "react-redux";
 import { tileType, dirFromVector } from "./state/gameUtil";
 import { actions as playerActions } from "./state/player";
 
-import snow from "./assets/source (7).gif";
+import snow from "./assets/snowing.gif";
 
 const handleKeyEvent = ({ key, shiftKey }) => {
   const keyMapper = {
@@ -64,7 +64,7 @@ const Player = ({ status, hit, ...tileProps }) => (
     {...tileProps}
     className={`player ${status} animated bounce ${hit ? "hit" : ""}`}
   >
-    🙃
+    😄
   </Tile>
 );
 

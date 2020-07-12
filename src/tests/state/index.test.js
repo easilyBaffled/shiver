@@ -1,13 +1,13 @@
-import { actions as playerActions } from "#state/player";
-// import { actions as tileActions } from "#state/tile";
-// import { actions as worldAction } from "#state/world";
-import app, { initialState, actions as gameActions } from "#state";
-import { playerStates, tileType } from "#state/gameUtil";
+import { actions as playerActions } from "../../state/player";
+// import { actions as tileActions } from "../../state/tile";
+// import { actions as worldAction } from "../../state/world";
+import app, { initialState, actions as gameActions } from "../../state";
+import { playerStates, tileType } from "../../state/gameUtil";
 import produce from "immer";
-import { Vector2 } from "#/state/lib/Vector2";
-import { COLD_ACCUMULATOR } from "#/state/constants";
-import { direction } from "#/state/gameUtil";
-import { initialState as playerInitialState } from "#/state/player";
+import { Vector2 } from "../../state/lib/Vector2";
+import { COLD_ACCUMULATOR } from "../../state/constants";
+import { direction } from "../../state/gameUtil";
+import { initialState as playerInitialState } from "../../state/player";
 
 console.tap = (v, ...args) => (console.log(v, ...args), v);
 console.tap.label = (l, ...args) => (v) => (console.log(l, v, ...args), v);
