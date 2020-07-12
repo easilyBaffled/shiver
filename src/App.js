@@ -15,7 +15,7 @@ const handleKeyEvent = ({ key, shiftKey }) => {
     ArrowLeft: () => playerActions.moveLeft(shiftKey),
     ArrowUp: () => playerActions.moveUp(shiftKey),
     ArrowDown: () => playerActions.moveDown(shiftKey),
-    [" "]: () => playerActions.scoop(),
+    " ": () => playerActions.scoop(),
   };
 
   return key in keyMapper ? keyMapper[key]() : null;
